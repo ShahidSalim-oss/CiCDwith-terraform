@@ -50,7 +50,7 @@ variable "github_branch" {
 
 variable "github_token" {
   type    = string
-  default = "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"
+  default = ""
 }
 
 variable "codestar_connection_id" {
