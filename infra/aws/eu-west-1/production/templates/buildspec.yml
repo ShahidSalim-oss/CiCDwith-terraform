@@ -6,37 +6,30 @@ env:
     M2_HOME: "/root/.m2"
 
 phases:
-  install:
-    runtime-versions:
-      java: corretto11
-    commands:
-      - java -version
   pre_build:
     commands:
-      - java -version
-      - echo logging in to ECR
-      - aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${aws_account_id}.dkr.ecr.${region}.amazonaws.com
-      - REPOSITORY_URI=${repository_url}
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      #dev-id
+      #- aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 774025244507.dkr.ecr.us-west-2.amazonaws.com
+      #prod-id
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 534030821312.dkr.ecr.us-east-1.amazonaws.com
+      - REPOSITORY_URI=534030821312.dkr.ecr.us-east-1.amazonaws.com/pet1
+      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
   build:
     commands:
-      - echo build started on $(date)
-      - mvn -e -X clean install
-      - echo building the docker image
+      - echo Build started on `date`
+      - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:latest .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
-      - echo build completed on $(date)
-      - echo pushing the docker images
-      - docker push $REPOSITORY_URI:latest
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo writing image definitions file for deployment
-      - printf '[{"name":"${container_name}","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-    
+      - echo Writing image definitions file...
+      - printf '[{"name":"cb-app","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
 artifacts:
-  files: imagedefinitions.json
-
-cache:
-  paths:
-    - '/root/.m2/**/*'
+  files:
+   - imagedefinitions.json
